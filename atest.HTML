@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gra Karciana 1 na 1</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(to bottom, #1e3c72, #2a5298);
+            color: #fff;
+            margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        h1 {
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin: 15px 0;
+            font-size: 2em;
+        }
+        #menu {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        #menu button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #ff4500;
+            border: none;
+            color: #fff;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+        #menu button:hover {
+            background: #cc3700;
+        }
+        #game {
+            display: none;
+            width: 100%;
+            max-width: 700px;
+        }
+        .player {
+            width: 100%;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+        }
+        .hand {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .card {
+            border: 2px solid #ffd700;
+            padding: 10px;
+            width: 100px;
+            text-align: center;
+            cursor: pointer;
+            background: #333;
+            border-radius: 6px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            color: #fff;
+            position: relative;
+            z-index: 1;
+        }
+        .card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+        }
+        .card.attack {
+            animation: attack 0.5s ease-in-out;
+        }
+        .card.strike {
+            animation: strike 0.7s ease-in-out;
+            z-index: 10;
+        }
+        .active-card {
+            border: 3px solid #ff4500;
+            background: #444;
+            padding: 8px;
+            border-radius: 6px;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #ff4500;
+            border: none;
+            color: #fff;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #cc3700;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .status {
+            font-size: 18px;
+            margin: 5px 0;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        @keyframes attack {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-15px) scale(1.1); }
+            100% { transform: translateY(0); }
+        }
+        @keyframes strike {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-150px) scale(1.2); }
+            100% { transform: translateY(0); }
+        }
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5em;
+            }
+            .player {
+                padding: 10px;
+            }
+            .card {
+                width: 80px;
+                padding: 8px;
+                font-size: 0.9em;
+            }
+            .active-card {
+                padding: 6px;
+            }
+            button {
+                padding: 8px 20px;
+                font-size: 14px;
+            }
+            .status {
+                font-size: 16px;
+            }
+            @keyframes strike {
+                0% { transform: translateY(0); }
+                50% { transform: translateY(-100px) scale(1.2); }
+                100% { transform: translateY(0); }
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="menu">
+        <h1>Gra Karciana 1 na 1</h1>
+        <button id="playAI">Graj z AI</button>
+        <button id="playHuman">Graj z Graczem</button>
+    </div>
+    
+    <div id="game">
+        <h1>Gra Karciana 1 na 1</h1>
+        
+        <div class="player" id="player1">
+            <h2 id="player1Name">Gracz 1</h2>
+            <p>Zdrowie: <span id="health1">25</span> | Mana: <span id="mana1">1</span>/<span id="maxMana1">1</span></p>
+            <h3>Ręka:</h3>
+            <div class="hand" id="hand1"></div>
+            <h3>Aktywna karta:</h3>
+            <div id="active1"></div>
+        </div>
+        
+        <div class="player" id="player2">
+            <h2 id="player2Name">Gracz 2</h2>
+            <p>Zdrowie: <span id="health2">25</span> | Mana: <span id="mana2">1</span>/<span id="maxMana2">1</span></p>
+            <h3>Ręka:</h3>
+            <div class="hand" id="hand2"></div>
+            <h3>Aktywna karta:</h3>
+            <div id="active2"></div>
+        </div>
+        
+        <button id="endTurn">Zakończ turę</button>
+        <h3 class="status" id="turn">Tura: Gracz 1</h3>
+        <h2 id="winner" style="display: none;">Zwycięzca: <span id="winnerName"></span></h2>
+    </div>
+
+    <script>
+        const cards = [
+            { name: "Wojownik", attack: 3, health: 3, element: "Ogień", manaCost: 2 },
+            { name: "Mag", attack: 2, health: 4, element: "Lód", manaCost: 1 },
+            { name: "Skrytobójca", attack: 4, health: 2, element: "Cień", manaCost: 3 },
+            { name: "Smok", attack: 5, health: 3, element: "Ogień", manaCost: 4 },
+            { name: "Kapłan", attack: 1, health: 5, element: "Lód", manaCost: 2 },
+            { name: "Berserker", attack: 6, health: 1, element: "Cień", manaCost: 5 }
+        ];
+
+        class Player {
+            constructor(name, health = 25, mana = 1, maxMana = 1, isAI = false) {
+                this.name = name;
+                this.health = health;
+                this.mana = mana;
+                this.maxMana = maxMana;
+                this.deck = [...cards, ...cards, ...cards]; // 3 kopie każdej karty
+                this.hand = [];
+                this.activeCard = null;
+                this.isAI = isAI;
+                this.shuffleDeck();
+            }
+
+            shuffleDeck() {
+                for (let i = this.deck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
+                }
+            }
+
+            drawCard() {
+                if (this.deck.length > 0) {
+                    this.hand.push(this.deck.pop());
+                } else {
+                    this.health -= 2;
+                    alert(`${this.name} nie ma kart w talii! Traci 2 zdrowia!`);
+                }
+            }
+        }
+
+        let player1, player2, currentPlayer, otherPlayer;
+        let gameMode = null;
+
+        function startGame(mode) {
+            gameMode = mode;
+            document.getElementById("menu").style.display = "none";
+            document.getElementById("game").style.display = "block";
+
+            player1 = new Player("Gracz 1");
+            player2 = new Player(mode === "AI" ? "AI" : "Gracz 2", 25, 1, 1, mode === "AI");
+            currentPlayer = player1;
+            otherPlayer = player2;
+
+            document.getElementById("player1Name").textContent = player1.name;
+            document.getElementById("player2Name").textContent = player2.name;
+
+            for (let i = 0; i < 4; i++) {
+                player1.drawCard();
+                player2.drawCard();
+            }
+
+            render();
+        }
+
+        function render() {
+            document.getElementById("health1").textContent = player1.health;
+            document.getElementById("mana1").textContent = player1.mana;
+            document.getElementById("maxMana1").textContent = player1.maxMana;
+            document.getElementById("hand1").innerHTML = player1.hand.map((card, index) => 
+                `<div class="card" data-index="${index}">${card.name}<br>Atak: ${card.attack}<br>Życie: ${card.health}<br>${card.element}<br>Mana: ${card.manaCost}</div>`
+            ).join("");
+            document.getElementById("active1").innerHTML = player1.activeCard ? 
+                `<div class="active-card">${player1.activeCard.name} (${player1.activeCard.element})</div>` : "";
+
+            document.getElementById("health2").textContent = player2.health;
+            document.getElementById("mana2").textContent = player2.mana;
+            document.getElementById("maxMana2").textContent = player2.maxMana;
+            document.getElementById("hand2").innerHTML = player2.hand.map((card, index) => 
+                `<div class="card" data-index="${index}">${card.name}<br>Atak: ${card.attack}<br>Życie: ${card.health}<br>${card.element}<br>Mana: ${card.manaCost}</div>`
+            ).join("");
+            document.getElementById("active2").innerHTML = player2.activeCard ? 
+                `<div class="active-card">${player2.activeCard.name} (${player2.activeCard.element})</div>` : "";
+
+            document.getElementById("turn").textContent = `Tura: ${currentPlayer.name}`;
+            document.getElementById("endTurn").disabled = currentPlayer.isAI;
+
+            if (player1.health <= 0 || player2.health <= 0) {
+                const winner = player1.health <= 0 ? player2 : player1;
+                document.getElementById("winnerName").textContent = winner.name;
+                document.getElementById("winner").style.display = "block";
+                document.getElementById("endTurn").disabled = true;
+                document.getElementById("hand1").innerHTML = "";
+                document.getElementById("hand2").innerHTML = "";
+            }
+        }
+
+        function playCard(index, isAI = false) {
+            if (index >= 0 && index < currentPlayer.hand.length) {
+                const card = currentPlayer.hand[index];
+                if (currentPlayer.mana >= card.manaCost) {
+                    let multiplier = 1;
+                    let effects = [];
+                    if (otherPlayer.activeCard && (
+                        (card.element === "Ogień" && otherPlayer.activeCard.element === "Lód") ||
+                        (card.element === "Lód" && otherPlayer.activeCard.element === "Cień") ||
+                        (card.element === "Cień" && otherPlayer.activeCard.element === "Ogień")
+                    )) {
+                        multiplier = 1.5;
+                    }
+                    const damage = Math.floor(card.attack * multiplier);
+                    otherPlayer.health -= damage;
+                    currentPlayer.mana -= card.manaCost;
+                    currentPlayer.activeCard = card;
+
+                    // Efekty elementów
+                    if (card.element === "Ogień") {
+                        otherPlayer.health -= 1;
+                        effects.push("Płonąca aura: +1 obrażeń przeciwnikowi!");
+                    } else if (card.element === "Lód") {
+                        currentPlayer.mana += 1;
+                        effects.push("Mroźne skupienie: +1 mana w tej turze!");
+                    } else if (card.element === "Cień") {
+                        currentPlayer.drawCard();
+                        effects.push("Cienista zwinność: Dobrano dodatkową kartę!");
+                    }
+
+                    // Animacje
+                    const cardElement = document.querySelector(`#hand${currentPlayer === player1 ? 1 : 2} .card[data-index="${index}"]`);
+                    if (cardElement) {
+                        cardElement.classList.add("attack");
+                        setTimeout(() => {
+                            cardElement.classList.remove("attack");
+                            cardElement.classList.add("strike");
+                            setTimeout(() => cardElement.classList.remove("strike"), 700);
+                        }, 500);
+                    }
+
+                    currentPlayer.hand.splice(index, 1);
+                    alert(`${currentPlayer.name} zagrywa ${card.name} (${card.element}) za ${card.manaCost} many i zadaje ${damage} obrażeń ${otherPlayer.name}! ${effects.join(" ")}`);
+                    render();
+                    return true;
+                } else if (!isAI) {
+                    alert(`Za mało many! Potrzeba ${card.manaCost}, masz ${currentPlayer.mana}.`);
+                }
+            }
+            return false;
+        }
+
+        function aiTurn() {
+            let played = false;
+            let bestCardIndex = -1;
+            let bestCardValue = -1;
+            currentPlayer.hand.forEach((card, index) => {
+                if (currentPlayer.mana >= card.manaCost) {
+                    let value = card.attack;
+                    if (otherPlayer.activeCard && (
+                        (card.element === "Ogień" && otherPlayer.activeCard.element === "Lód") ||
+                        (card.element === "Lód" && otherPlayer.activeCard.element === "Cień") ||
+                        (card.element === "Cień" && otherPlayer.activeCard.element === "Ogień")
+                    )) {
+                        value *= 1.5;
+                    }
+                    if (card.element === "Ogień") value += 1;
+                    if (card.element === "Cień") value += 2;
+                    if (value > bestCardValue) {
+                        bestCardValue = value;
+                        bestCardIndex = index;
+                    }
+                }
+            });
+
+            if (bestCardIndex !== -1) {
+                played = playCard(bestCardIndex, true);
+            }
+
+            setTimeout(() => {
+                currentPlayer.drawCard();
+                currentPlayer.maxMana = Math.min(currentPlayer.maxMana + 1, 10);
+                currentPlayer.mana = currentPlayer.maxMana;
+                [currentPlayer, otherPlayer] = [otherPlayer, currentPlayer];
+                render();
+            }, played ? 1500 : 500);
+        }
+
+        document.getElementById("playAI").addEventListener("click", () => startGame("AI"));
+        document.getElementById("playHuman").addEventListener("click", () => startGame("Human"));
+
+        document.getElementById("hand1").addEventListener("click", (e) => {
+            if (currentPlayer === player1 && !currentPlayer.isAI) {
+                const index = e.target.closest(".card")?.dataset.index;
+                if (index !== undefined) playCard(Number(index));
+            }
+        });
+
+        document.getElementById("hand2").addEventListener("click", (e) => {
+            if (currentPlayer === player2 && !currentPlayer.isAI) {
+                const index = e.target.closest(".card")?.dataset.index;
+                if (index !== undefined) playCard(Number(index));
+            }
+        });
+
+        document.getElementById("endTurn").addEventListener("click", () => {
+            if (!currentPlayer.isAI) {
+                currentPlayer.drawCard();
+                currentPlayer.maxMana = Math.min(currentPlayer.maxMana + 1, 10);
+                currentPlayer.mana = currentPlayer.maxMana;
+                [currentPlayer, otherPlayer] = [otherPlayer, currentPlayer];
+                render();
+                if (currentPlayer.isAI) {
+                    setTimeout(aiTurn, 500);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
